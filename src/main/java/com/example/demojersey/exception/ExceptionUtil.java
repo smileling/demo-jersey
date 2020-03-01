@@ -12,6 +12,7 @@ public class ExceptionUtil {
             throw new SimpleException(errorMsg,demoError);
         }
     }
+
     public static Response toResponse(Throwable exception) {
         if (exception instanceof SimpleException) {
             SimpleException se = (SimpleException) exception;

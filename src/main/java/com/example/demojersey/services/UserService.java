@@ -3,41 +3,43 @@ package com.example.demojersey.services;
 import com.example.demojersey.bean.User;
 import com.example.demojersey.exception.DemoError;
 import com.example.demojersey.exception.ExceptionUtil;
-import com.example.demojersey.utils.CSVProcessor;
-import org.apache.log4j.Logger;
+import com.example.demojersey.utils.CSVProcessorUtil;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.InputStream;
-import java.util.List;
 
 @Service
 @Path("/user")
 public class UserService {
-//    final static Logger logger = Logger.getLogger(UserService.class);
+
+    //TODO use swagger to generate apis
+
+    public static String CSVFILE = "users.csv"; //TODO read from property file
+
     @GET
     @Produces("application/json")
     @Path("/first")
     public Response getFirstUser(@QueryParam("file") String file) {
         try {
-            User user;
             if (file == null || file.equals("")) {
-                //if file is not specified, use the default file users.csv
-                user = CSVProcessor.fetchFirstUser("users.csv");
-            } else {
-                user = CSVProcessor.fetchFirstUser(file);
+                file = CSVFILE;
+            }
+
+            User user = CSVProcessorUtil.fetchFirstUserFromCSV(file);
+            if(user == null) {
+                return Response.status(Response.Status.OK).entity("{}").build();
             }
             return Response.status(Response.Status.OK).entity(user.toJson()).build();
         } catch (Exception e) {
             return ExceptionUtil.toResponse(e);
+//            return ExceptionUtil.toResponse(new SimpleException("Query failed, please retry.", DemoError.REQUEST_ERROR, new NullPointerException().getStackTrace()[0].toString()));
+//            return Response.status(Response.Status.BAD_REQUEST).entity(ExceptionUtils.getStackTrace(e).toString()).build();
         }
     }
 
@@ -46,7 +48,10 @@ public class UserService {
     @Path("/{name}")
     public Response getUser(@PathParam("name") @NotNull String name) {
         try {
-            User user = CSVProcessor.fetchUser(name, "users.csv");
+            User user = CSVProcessorUtil.fetchUserFromCSV(name, CSVFILE);
+            if (user == null) {
+                return Response.status(Response.Status.OK).entity("{}").build();
+            }
             return Response.status(Response.Status.OK).entity(user.toJson()).build();
         } catch (Exception e) {
             return ExceptionUtil.toResponse(e);
@@ -61,13 +66,16 @@ public class UserService {
             ExceptionUtil.checkArgument(name == null || name.isEmpty(),
                     "invalid user name.",
                     DemoError.INVALID_USER_NAME);
-            User user;
+
             if (file == null || file.equals("")) {
-                //if file is not specified, use the default file users.csv
-                user = CSVProcessor.fetchUser(name, "users.csv");
-            } else {
-                user = CSVProcessor.fetchUser(name, file);
+                file = CSVFILE;
             }
+
+            User user = CSVProcessorUtil.fetchUserFromCSV(name, file);
+            if (user == null) {
+                return Response.status(Response.Status.OK).entity("{}").build();
+            }
+
             return Response.status(Response.Status.OK).entity(user.toJson()).build();
         } catch (Exception e) {
             return ExceptionUtil.toResponse(e);
@@ -79,7 +87,7 @@ public class UserService {
     @Path("/upload")
     public Response getAllUploadedFiles() {
         try {
-            return Response.status(Response.Status.OK).entity(CSVProcessor.fetchAllCSVFiles()).build();
+            return Response.status(Response.Status.OK).entity(CSVProcessorUtil.fetchAllCSVFiles()).build();
         } catch (Exception e) {
             return ExceptionUtil.toResponse(e);
         }
@@ -95,8 +103,8 @@ public class UserService {
             ExceptionUtil.checkArgument(fileInputStream == null || fileMetaData == null,
                     "Invalid file. Please uploade valid file.",
                     DemoError.INVALID_FILE); //TODO improve -> check file format, etc.
-            String res = CSVProcessor.uploadSingleFile(fileInputStream, fileMetaData);
-            return Response.status(Response.Status.OK).entity(res).build();
+            CSVProcessorUtil.uploadSingleCSVFile(fileInputStream, fileMetaData);
+            return Response.status(Response.Status.OK).entity("{}").build();
         } catch (Exception e) {
             return ExceptionUtil.toResponse(e);
         }
