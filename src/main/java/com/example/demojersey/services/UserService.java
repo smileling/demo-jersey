@@ -28,8 +28,13 @@ public class UserService {
     @Path("/first")
     public Response getFirstUser(@QueryParam("file") String file) {
         try {
-//            User user = CSVProcessor.fetchFirstUser("users.csv");
-            User user = CSVProcessor.fetchFirstUser(file);
+            User user;
+            if (file == null || file.equals("")) {
+                //if file is not specified, use the default file users.csv
+                user = CSVProcessor.fetchFirstUser("users.csv");
+            } else {
+                user = CSVProcessor.fetchFirstUser(file);
+            }
             return Response.status(Response.Status.OK).entity(user.toJson()).build();
         } catch (Exception e) {
             return ExceptionUtil.toResponse(e);
@@ -56,7 +61,13 @@ public class UserService {
             ExceptionUtil.checkArgument(name == null || name.isEmpty(),
                     "invalid user name.",
                     DemoError.INVALID_USER_NAME);
-            User user = CSVProcessor.fetchUser(name, file);
+            User user;
+            if (file == null || file.equals("")) {
+                //if file is not specified, use the default file users.csv
+                user = CSVProcessor.fetchUser(name, "users.csv");
+            } else {
+                user = CSVProcessor.fetchUser(name, file);
+            }
             return Response.status(Response.Status.OK).entity(user.toJson()).build();
         } catch (Exception e) {
             return ExceptionUtil.toResponse(e);

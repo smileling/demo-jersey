@@ -149,10 +149,9 @@ public class CSVProcessor {
         String charset = "utf-8";
         File file = new File(srcPath);
 
-        if (csvFile == null || csvFile.isEmpty() || !file.exists()) {
-            csvFile = "users.csv";
-            srcPath = DATAPATH + csvFile;
-            logger.warn(file + " doesn't exist, will fetch the user from default file: " + srcPath);
+        if (!file.exists()) {
+            logger.error(file + " doesn't exist.");
+            throw new SimpleException(file + " doesn't exist.", DemoError.File_NOT_FOUND);
         }
 
         try {
@@ -198,10 +197,13 @@ public class CSVProcessor {
         String srcPath = DATAPATH + csvFile;
         File file = new File(srcPath);
 
-        if (csvFile == null || csvFile.isEmpty() || !file.exists()) {
-            csvFile = "users.csv";
-            srcPath = DATAPATH + csvFile;
-            logger.warn(file + " doesn't exist, will fetch the user from default file: " + srcPath);
+//        if (csvFile == null || csvFile.isEmpty() || !file.exists()) {
+        if (!file.exists()) {
+//            csvFile = "users.csv";
+//            srcPath = DATAPATH + csvFile;
+//            logger.warn(file + " doesn't exist, will fetch the user from default file: " + srcPath);
+            logger.error(file + " doesn't exist.");
+            throw new SimpleException(file + " doesn't exist.", DemoError.File_NOT_FOUND);
         }
 
         String charset = "utf-8";
