@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SimpleExceptionEntity {
+public class UserSvcExceptionEntity {
     @JsonProperty
     protected  String message;
 
@@ -22,7 +22,7 @@ public class SimpleExceptionEntity {
     @JsonProperty
     protected String cause;
 
-    public SimpleExceptionEntity(String message, int errorId, String errorCode, String category, String cause) {
+    public UserSvcExceptionEntity(String message, int errorId, String errorCode, String category, String cause) {
         this.message = message;
         this.errorId = errorId;
         this.errorCode = errorCode;

@@ -1,7 +1,8 @@
 package com.example.demojersey.services;
 
 import com.example.demojersey.bean.User;
-import com.example.demojersey.exception.DemoError;
+import com.example.demojersey.common.UserSvcConfigBean;
+import com.example.demojersey.exception.UserSvcError;
 import com.example.demojersey.exception.ExceptionUtil;
 import com.example.demojersey.utils.CSVProcessorUtil;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -30,7 +31,6 @@ public class UserService {
             if (file == null || file.equals("")) {
                 file = CSVFILE;
             }
-
             User user = CSVProcessorUtil.fetchFirstUserFromCSV(file);
             if(user == null) {
                 return Response.status(Response.Status.OK).entity("{}").build();
@@ -65,7 +65,7 @@ public class UserService {
         try {
             ExceptionUtil.checkArgument(name == null || name.isEmpty(),
                     "invalid user name.",
-                    DemoError.INVALID_USER_NAME);
+                    UserSvcError.INVALID_USER_NAME);
 
             if (file == null || file.equals("")) {
                 file = CSVFILE;
@@ -102,7 +102,7 @@ public class UserService {
         try {
             ExceptionUtil.checkArgument(fileInputStream == null || fileMetaData == null,
                     "Invalid file. Please uploade valid file.",
-                    DemoError.INVALID_FILE); //TODO improve -> check file format, etc.
+                    UserSvcError.INVALID_FILE); //TODO improve -> check file format, etc.
             CSVProcessorUtil.uploadSingleCSVFile(fileInputStream, fileMetaData);
             return Response.status(Response.Status.OK).entity("{}").build();
         } catch (Exception e) {

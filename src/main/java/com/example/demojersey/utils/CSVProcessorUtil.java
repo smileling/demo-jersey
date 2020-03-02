@@ -1,14 +1,14 @@
 package com.example.demojersey.utils;
 
 import com.example.demojersey.bean.User;
-import com.example.demojersey.exception.DemoError;
+import com.example.demojersey.common.UserSvcConfigBean;
+import com.example.demojersey.exception.UserSvcError;
 import com.example.demojersey.exception.ExceptionUtil;
 import com.google.gson.Gson;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -16,19 +16,115 @@ import java.util.List;
 import java.util.Properties;
 
 public abstract class CSVProcessorUtil {
-//    @Value("${csv.root.path}")
-//    public static String FILEROOTPATH;
     public static final Logger logger = Logger.getLogger(CSVProcessorUtil.class);
+    public static UserSvcConfigBean cb = UserSvcConfigBean.getInstance();
 
-    public static String getDataPath() {
-        Properties prop = new Properties();
+//    public static String getDataPath() {
+//        Properties prop = new Properties();
+//        try {
+//            prop.load(new FileInputStream("src/main/resources/config/config.properties"));
+//            return prop.getProperty("csv.files.path");
+//        } catch (Exception e) {
+//            logger.warn("Read property file failed, and will use default configurations.");
+//            return "/tmp/demo/";
+//        }
+//    }
+
+    //TODO fetchUserFromDB
+
+    //TODO updateUserToDB
+
+    public static User fetchUserFromCSV(String userName, String csvFile) throws IOException {
+        String srcPath = cb.getCSVRootFilePath() + csvFile;
+        String charset = "utf-8";
+        File file = new File(srcPath);
+
+        ExceptionUtil.checkArgument(!file.exists(), file + " doesn't exist.", UserSvcError.File_NOT_FOUND);
+
         try {
-            prop.load(new FileInputStream("src/main/resources/config/config.properties"));
-            return prop.getProperty("csv.files.path");
-        } catch (Exception e) {
-            logger.warn("Read property file failed, and will use default configurations.");
-            return "/tmp/demo/";
+            CSVReader csvReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader(new FileInputStream(new File(srcPath)), charset))).build();
+            String[] user;
+            user = csvReader.readNext();
+            while(user != null) {
+                if (user[0].equals(userName)) {
+                    User u = new User();
+                    String[] userFields = u.getClassFields();
+                    int fieldLen = userFields.length;
+
+                    StringBuilder userStr = new StringBuilder("{");
+                    int fieldNum = user.length;
+                    for(int i = 0; i < fieldNum && i < fieldLen; i++) {
+                        if (i < fieldNum - 1) {
+                            userStr.append(userFields[i]);
+                            userStr.append(":");
+                            userStr.append(user[i]);
+                            userStr.append(",");
+                        } else {
+                            userStr.append(userFields[i]);
+                            userStr.append(":");
+                            userStr.append(user[i]);
+                        }
+                    }
+                    userStr.append("}");
+                    if(logger.isInfoEnabled()) {
+                        logger.info("Find user: " + userName + ". User info: " + userStr);
+                    }
+                    Gson gson = new Gson();
+                    return gson.fromJson(userStr.toString(), User.class);
+                }
+                user = csvReader.readNext();
+            }
+        } catch (IOException e) {
+            throw e;
+//            throw new SimpleException("Query failed, please retry.", DemoError.INTERNAL_SERCICE_ERROR, e.getStackTrace()[0].toString());
         }
+
+        return null;
+    }
+
+    public static User fetchFirstUserFromCSV(String csvFile) throws IOException {
+        String srcPath = cb.getCSVRootFilePath() + csvFile;
+        File file = new File(srcPath);
+
+        ExceptionUtil.checkArgument(!file.exists(), file + " doesn't exist.", UserSvcError.File_NOT_FOUND);
+
+        String charset = "utf-8";
+        try {
+            CSVReader csvReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader(new FileInputStream(new File(srcPath)), charset))).build();
+            String[] user;
+            user = csvReader.readNext();
+            if (user != null) {
+//                String[] userFields = {"name", "age", "emailAddress"};
+                User u = new User();
+                String[] userFields = u.getClassFields();
+                int fieldLen = userFields.length;
+
+                StringBuilder userStr = new StringBuilder("{");
+                int fieldNum = user.length;
+                for(int i = 0; i < fieldNum && i < fieldLen; i++) {
+                    if (i < fieldNum - 1) {
+                        userStr.append(userFields[i]);
+                        userStr.append(":");
+                        userStr.append(user[i]);
+                        userStr.append(",");
+                    } else {
+                        userStr.append(userFields[i]);
+                        userStr.append(":");
+                        userStr.append(user[i]);
+                    }
+                }
+                userStr.append("}");
+                if(logger.isInfoEnabled()) {
+                    logger.info("First user: " + user[0] + ". User info: " + userStr);
+                }
+                Gson gson = new Gson();
+                return gson.fromJson(userStr.toString(), User.class);
+            }
+        } catch (IOException e) {
+            throw e;
+//            throw new SimpleException("Query failed, please retry.", DemoError.INTERNAL_SERCICE_ERROR, e.getStackTrace()[0].toString());
+        }
+        return null;
     }
 
     /***
@@ -37,7 +133,7 @@ public abstract class CSVProcessorUtil {
      */
     public static List<String> fetchAllCSVFiles() {
         try {
-            File dir = new File(getDataPath());
+            File dir = new File(cb.getCSVRootFilePath());
             List<String> fileList = new ArrayList<String>();
             for (File file : dir.listFiles()) {
                 String fileName = file.getName();
@@ -68,7 +164,7 @@ public abstract class CSVProcessorUtil {
 
         try {
             String file = fileMetaData.getFileName();
-            OutputStream out = new FileOutputStream(new File(getDataPath() + file));
+            OutputStream out = new FileOutputStream(new File(cb.getCSVRootFilePath() + file));
             while ((read = fileInputStream.read(bytes)) != -1) {
                 out.write(bytes, 0, read);
             }
@@ -76,7 +172,7 @@ public abstract class CSVProcessorUtil {
             out.close();
 
             if(logger.isInfoEnabled()) {
-                logger.info("Successfully upload file " + file + " to " + getDataPath());
+                logger.info("Successfully upload file " + file + " to " + cb.getCSVRootFilePath());
             }
         } catch(IOException e) {
             throw e;
@@ -137,93 +233,6 @@ public abstract class CSVProcessorUtil {
 //
 //    }
 
-    //TODO fetchUserFromDB
-
-    //TODO updateUserToDB
-
-    public static User fetchUserFromCSV(String userName, String csvFile) throws IOException {
-        String srcPath = getDataPath() + csvFile;
-        String charset = "utf-8";
-        File file = new File(srcPath);
-
-        ExceptionUtil.checkArgument(!file.exists(), file + " doesn't exist.", DemoError.File_NOT_FOUND);
-
-        try {
-            CSVReader csvReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader(new FileInputStream(new File(srcPath)), charset))).build();
-            String[] user;
-            user = csvReader.readNext();
-            while(user != null) {
-                if (user[0].equals(userName)) {
-                    User u = new User();
-                    String[] userFields = u.getClassFields();
-                    int fieldLen = userFields.length;
-
-                    String userStr = "";
-                    int fieldNum = user.length;
-                    for(int i = 0; i < fieldNum && i < fieldLen; i++) {
-                        if (i < fieldNum - 1) {
-                            userStr = userStr + userFields[i] + ":" + user[i] + ",";
-                        } else {
-                            userStr = userStr + userFields[i] + ":" + user[i];
-                        }
-                    }
-                    userStr = "{" + userStr + "}";
-                    if(logger.isInfoEnabled()) {
-                        logger.info("Find user: " + userName + ". User info: " + userStr);
-                    }
-                    Gson gson = new Gson();
-                    return gson.fromJson(userStr, User.class);
-                }
-                user = csvReader.readNext();
-            }
-        } catch (IOException e) {
-            throw e;
-//            throw new SimpleException("Query failed, please retry.", DemoError.INTERNAL_SERCICE_ERROR, e.getStackTrace()[0].toString());
-        }
-
-        return null;
-    }
-
-    public static User fetchFirstUserFromCSV(String csvFile) throws IOException {
-        String srcPath = getDataPath() + csvFile;
-        File file = new File(srcPath);
-
-        ExceptionUtil.checkArgument(!file.exists(), file + " doesn't exist.", DemoError.File_NOT_FOUND);
-
-        String charset = "utf-8";
-        try {
-            CSVReader csvReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader(new FileInputStream(new File(srcPath)), charset))).build();
-            String[] user;
-            user = csvReader.readNext();
-            if (user != null) {
-//                String[] userFields = {"name", "age", "emailAddress"};
-                User u = new User();
-                String[] userFields = u.getClassFields();
-                int fieldLen = userFields.length;
-
-                String userStr = "";
-                int fieldNum = user.length;
-                for(int i = 0; i < fieldNum && i < fieldLen; i++) {
-                    if (i < fieldNum - 1) {
-                        userStr = userStr + userFields[i] + ":" + user[i] + ",";
-                    } else {
-                        userStr = userStr + userFields[i] + ":" + user[i];
-                    }
-                }
-                userStr = "{" + userStr + "}";
-                if(logger.isInfoEnabled()) {
-                    logger.info("First user: " + user[0] + ". User info: " + userStr);
-                }
-                Gson gson = new Gson();
-                return gson.fromJson(userStr, User.class);
-            }
-        } catch (IOException e) {
-            throw e;
-//            throw new SimpleException("Query failed, please retry.", DemoError.INTERNAL_SERCICE_ERROR, e.getStackTrace()[0].toString());
-        }
-        return null;
-    }
-
     public static void main(String[] args) {
 //        String srcPath = userPathDir + "users.csv";
 //        String charset = "utf-8";
@@ -242,7 +251,7 @@ public abstract class CSVProcessorUtil {
 //        }
 
 
-        File dir = new File(getDataPath());
+        File dir = new File(cb.getCSVRootFilePath());
         List<String> fileList = new ArrayList<String>();
         for(File file: dir.listFiles()) {
             String fileName = file.getName();
