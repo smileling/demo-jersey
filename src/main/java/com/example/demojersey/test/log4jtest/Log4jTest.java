@@ -1,7 +1,7 @@
 package com.example.demojersey.test.log4jtest;
 
-import com.example.demojersey.exception.DemoError;
-import com.example.demojersey.exception.SimpleException;
+import com.example.demojersey.exception.UserSvcError;
+import com.example.demojersey.exception.UserSvcException;
 import org.apache.log4j.Logger;
 
 public class Log4jTest {
@@ -10,7 +10,7 @@ public class Log4jTest {
     public int num;
 
     public Exception getException() {
-        return new SimpleException("Request Error", DemoError.REQUEST_ERROR);
+        return new UserSvcException("Request Error", UserSvcError.INTERNAL_SERCICE_ERROR);
     }
 
     public Log4jTest(String a, int num) {
